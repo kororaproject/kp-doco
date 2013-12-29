@@ -1,0 +1,461 @@
+<!DOCTYPE HTML> <HTML lang="en"> <HEAD> <TITLE> Korora 19 Installation HOWTO </TITLE> </HEAD>
+
+<BODY>
+
+<CENTER>
+<h1>KORORA 19 INSTALLATION HOWTO</h1>
+
+or 
+<BR>
+<b>You v Anaconda.</b>
+</CENTER>
+<BLOCKQUOTE>
+<P>
+This is a static variant of the video under
+<BR>
+<CODE>Help - HOWTO/Tutorials - Install (https://kororaproject.org/help/howto-tutorials/install/) - [HOWTO] Korora Install.</CODE>
+<P>
+It particularly includes *EFI* installation.
+<BLOCKQUOTE>
+<I>If you can improve the document - correct errors, add something, clarify something - please say so!</I>
+</BLOCKQUOTE>
+
+<H4>BEFORE YOU BEGIN</H4>
+
+<H5>DISABLE Microsoft difficulties</H5>
+
+Of course, only if you have Windows pre-installed!
+<UL>
+<LI><B>Secure boot</B>
+<BR>
+This is *not* an integral part of EFI. Fedora reckons to cope with it, but it is simpler just to turn it off. You do this in the <I>BIOS setup</I> of your computer, access to which at startup varies according to brand: Del, Esc, Fn. Just look for the item and disable it.
+<P>
+<LI><B>Fast shutdown</B>
+<BR>
+Windows 8 implements a fast shutdown feature that helps speed up shutdown and startup operations on a single-boot computer. Unfortunately, this feature can cause filesystem corruption if it's used on a multi-boot computer. You can disable the feature by launching an Administrator Command Prompt window and typing: 
+<BR>
+ <CODE>powercfg /h off</CODE>
+</UL>
+
+<H5>The hard disc (or its equivalent like SSD)</H5>
+
+The trickiest part of any Linux installation is how you organise - or let be organised - the hard disc(s), which depends a lot on your present setup and your own competence. You should have an idea of how your disc is currently divided up, and how Korora is going to be accommodated. Here are some generic situations:
+<UL>
+<LI>You know nothing about partitions, but are happy to give the entire disc to the Korora installation. Easy.
+<P>
+<LI>You know nothing about partitions and currently have just Windows installed - which you want to preserve. You put your faith in the Korora installer Anaconda to sort things out for you - either automatically or guided.
+<BR>
+None-the-less, <em>it will pay you to use Windows itself to free up disc space in advance</em>. See the notes below on this.
+<BR>Be warned that boxes with Windows plus OEM stuff can have 5 partitions just for starters!
+<P>
+<LI>You know about partitions, have just Windows installed, and follow the advice below on using Windows to free up disc space in advance.
+<P>
+<LI>You already have Linux installed (with or without Windows), so you implicitly have some understanding of partitions, and know enough to pre-create or allow for the creation of the necessary disc space.
+</UL>
+
+<H5>How will Korora boot?</H5>
+Booting operating systems is very different between old BIOS/MBR boxes and new EFI/GPT boxes.
+
+<H6>Booting BIOS/MBR systems</H6>
+ 
+All booting starts from the Master Boot Record (MBR). Let Korora take control? This means letting it put the bootloader Grub on the MBR - designated by the whole disc device <CODE>sdX</CODE>. Linux installations mostly want to take over the MBR and rely on its Grub menu to load any other OS's found, Windows included, when Grub was installed. This is the normal choice. The next Linux will do the same...
+<P>
+If you already have a multi-booting setup, this would be overwritten. To preserve such an existing setup, *install Grub to the root partition*, <CODE>sdXY</CODE> rather than <CODE>sdX</CODE>, and it is up to you to get it loaded, but you will know how to. This implies a <I>boot manager</I>, which may be truly independant, or using Windows' boot menu.
+<P>
+
+<H6>Booting EFI/GPT systems</H6>
+
+This is the new norm, and booting is more flexible. The principle disc must have a special partition called the <em>EFI System Partition (alias ESP)</em> which contains the <CODE>\EFI\</CODE> directory tree. Each OS stores its bootloader in an EFI sub-directory named after itself: <CODE>\EFI\fedora\</CODE> for Korora. It is also registered in the EFI NVRAM, including a list called BootOrder - each OS qualified by an 'active' flag. When the system starts, the BIOS should try each active OS in BootOrder until one works, otherwise boot from the default bootloader
+<BR>
+<CODE>\EFI\Boot\bootx64.efi</CODE>
+<BR>
+This is the nearest thing to the old MBR, but is only invoked as a last resort.
+<P>
+Windows-equipped EFI systems may be configured to boot Windows come what may:-
+<BR>
+ <CODE>\EFI\Microsoft\Boot\bootmgfw.efi</CODE>
+<BR>
+which will also be the initial default boot loader <CODE>\EFI\Boot\bootx64.efi</CODE> .
+<P>
+In addition, before all this, EFI boxes normally have a key to press *quickly* on startup (mine is F12) to show an *EFI boot menu* of each registered OS, plus possibly bootable devices, to select them directly. If the disc is chosen, the default bootloader is invoked.
+<P>
+Like for MBR, any installed Linux's Grub boot menu will normally offer the other OS's, so theoretically it should not matter who gets booted initially - except Windows. Notwithstanding this, if you want to multiboot more than one Linux + Windows, as for MBR it pays to have an independant <EM>boot manager</EM> which must be the 'OS' actually booted. rEFInd is very recommended, or possibly Gummiboot. The former (? and second) dynamically finds all OS's, so you do not have to 'add' Korora to it.
+<P>
+Despite all this choice, any Linux must create its own \EFI\... directory (here <CODE>\EFI\fedora\</CODE>) and put into it at least its own bootloader, nowadays mostly <CODE>grubx64.efi</CODE> (and for Fedora/Korora several other things); and add itself to the EFI NVRAM, and BootOrder. If it does nothing more, it should be bootable:
+<BR>
+- from the EFI boot menu
+<BR>
+- or its position ('active') in BootOrder
+<BR>
+- or a boot manager.
+<BR>
+Most Linux's stop there. To improve its chances, it can also overwrite the system default bootloader <CODE>\EFI\Boot\bootx64.efi</CODE> with its own, assuming global booting responsibility *if* this default item gets invoked. This is what Korora/Fedora currently does - which can be naughty.
+
+<BLOCKQUOTE><em>
+Korora (alias Fedora) EFI installation currently seems to unconditionally overwrite the default bootloader
+<BR>
+<CODE>\EFI\Boot\bootx64.efi</CODE>
+<BR>
+You <B>must</B> back it up beforehand. Easiest is simply to copy it to another name in the same directory.
+</em></BLOCKQUOTE>
+
+<H5>Acessing the EFI System Partition, the ESP</H5>
+
+It is in your interests to know how to access the ESP, especially when things go wrong, but also to do deliberate manipulations. It is commonly the first partition on the disc: sda1, sometimes the second: sda2 (for the first disc sda). You need to know. It is a normal FAT32 filesystem containing conventionally a directory tree <CODE>\EFI\...</CODE> with a sub-directory per installed OS e.g. <CODE>\EFI\fedora\</CODE> .
+<UL>
+<LI>From WINDOWS
+<BR>
+Locate Command Prompt in the Start menu, right-click it, and select Run as Administrator. This action opens a Command Prompt window with administrative privileges. Type
+<BR>
+ <CODE>mountvol S: /S</CODE>
+<BR>
+in the Administrator Command Prompt window. This makes the ESP accessible as drive S: from that window. (You can use a drive identifier other than S: if you like.)
+<P>
+<LI>From LINUX
+<BR>
+The ESP is usually already mounted on /boot/efi or /boot/EFI, these names are not obligatory. You treat it like any other directory, but probably will need to be root to <I>do</I> anything.
+<BR>
+In the unlikely event that the ESP is not already mounted, you will need to do that (as root) where <CODE>/dev/sdXY</CODE> is the correct disc and partition for the ESP:
+<BR>
+<CODE>mount -t vfat /dev/sdXY {mountpoint}</CODE>
+</UL>
+
+<H5>Freeing up disc space in advance using Windows itself</H5>
+
+You have just Windows already installed on your system - the typical situation for a purchased computer. Windows will implicitly have all the disc space, so you must free some up for Korora (at least 10Gb realistically, more if possible). Often Windows systems have a D: DATA partition which remains unused! If so, use or shrink that. Otherwise you must shrink the main Windows partition disc C: . 
+<BR>
+<EM>It is recommended to do all manipulation of Windows partitions/discs from Windows itself, Disk Manager</EM>. Any Linux installer will do its best, but it is safest to do all you can beforehand from Windows. Search the Internet for tutorials; exact procedures vary per Windows version, and may involve temporarily eliminating the swap file PAGEFILE.SYS, setting virtual memory to 0.
+<br>
+<EM>Always defragment beforehand any Windows partition/disc you want to shrink</EM>.
+<br>
+Disk Manager can delete, create and re-size partitions. You can use it to pre-structure (but not format) the disc for Linux, or just leave unstructured free space. For shrinking C: you may get away with just the default shrink option: try your luck.
+<BR>
+Always re-boot Windows a couple of times after defragmenting or altering its disc structure.
+<P>
+
+<H3>THE LIVE KORORA INSTALLATION</H3>
+
+You do the installation from Korora running 'live' from DVD or USB stick. To achieve this, you will probably have to tell your computer BIOS to boot from the appropriate device. It is important to note that, with a working Internet connection, <em>you can access the Internet during the installation</em> e.g. to read this HOWTO. This is very handy, but is likely to be slow.
+
+<h4>Set keyboard layout for doing the installation</h4>
+
+From your live session, <I>before</I> launching the installation, make sure your keyboard layout is OK for doing the installation; otherwise you may have problems doing the small amount of typing called for.
+<br>
+<B>Works</B>:
+<br>
+&nbsp;<CODE>System - Preferences - Keyboard</code>
+<br>
+same as:<br>
+&nbsp;<CODE>System - Control Centre - Hardware - FIRST keyboard icon</CODE>
+<P>
+
+<img src='img/010.png'>
+
+<P>
+First (middle) Keyboard icon ->
+<P>
+
+<img src='img/020.png'>
+
+<P>
+Does <i>not</I>	 work:
+<br>
+&nbsp;<CODE>System - Administration - Keyboard</CODE>
+<br>
+same as:
+<br>
+&nbsp;<CODE>System - Control Centre - Hardware - SECOND keyboard icon</CODE>
+<P>
+<h4>Internet</h4>
+Connect this if possible.
+<P>
+<B>Install to Hard Drive:</B> Double-click the desktop icon.
+<P>
+WELCOME TO KORORA: language
+<P>
+
+<img src='img/030.png'>
+
+<P>
+Choose the language for the system to be installed. If your keyboard layout is the same, tick the little box bottom left. Click Continue.
+<P>
+<H3> The INSTALLATION SUMMARY SCREEN </H3>
+
+<img src='img/040.png'>
+
+<P>
+- <B> LOCALISATION </B>
+<P>
+- DATE & TIME: Set your timezone.<P>
+
+<img src='img/050.png'>
+
+<P>
+If you opt for automatic NTP setting (top right), there is nothing more to do; even if the hour is wrong, you cannot correct it here. Nor can you without NTP! BUG?
+<P>
+- KEYBOARD: Chose or add ("+") that for the installed system; try it! Remove ("-") unwanted layouts.
+<P>
+
+<img src='img/060.png'>
+
+<P>
+
+<img src='img/070.png'>
+
+<P>
+
+- SOFTWARE/NETWORK: The main reason for doing this is to set the HostName.
+<P>
+<img src='img/080.png'>
+<P>
+<H3> STORAGE </H3>
+This is where things get unsure, hence the video. See the introductory section on organising the disc.
+<UL>
+<LI> You are willing to give the whole disc to Korora: let it do its thing. Easy.
+<P>
+<LI>You have just Windows already installed on your system occupying all the disc (you did not free up space in advance). You can either trust Anaconda to make necessary adjustments automatically, or be guided through its proposals. 
+<P>
+<LI>You have just 1 Linux system, which occupies all the disc. You will need to free up space yourself beforehand, and must know how to.
+<P>
+<LI>You already have >1 operating system installed, multi-booting. Implicitly you understand enough to steer the Korora (or any other Linux) installation, freeing up space, re-structuring the partitions if need be either beforehand or during the installation.
+<BR>
+I always prefer to do this independantly beforehand, and direct the installation to pre-designated partitions.
+</UL>
+<P>
+<H4> What partitions you will need</H4>
+
+The minimum for all Linux sytems are:
+<UL>
+<LI> A (typically large, at least 10Gb) partition for the root filesystem <B>/</B> most commonly formatted as <CODE>ext4</CODE> among other possibilities.
+
+<LI>A small one (a few Gb) for <B>swap</B>.
+<BR>
+If you have previously installed any Linux, the swap partition will already exist.
+<P>
+<LI>Plus, for EFI systems:<BR>
+The EFI System Partition, the <B>ESP</B>, 300Mb - 1Gb, formatted FAT32, which will be mounted on /boot/efi/ for Korora.
+<BR>
+EFI systems will normally already have this essential partition, probably as <CODE>sda1</CODE> or <CODE>sda2</CODE>.
+<P>
+<LI>Optionally, but very sensibly:
+<BR>
+A large partition for all your data, mounted as you define.
+</UL>
+<P>
+
+
+
+<H4>INSTALLATION DESTINATION</H4>
+
+<img src='img/090.png'>
+
+<P>
+Shows discs (or equivalent storage devices like SSD) on your system. Click on the disc you want to install to so that it is *ticked*.
+<br>
+Then click the "Full disk summary and bootloader" link bottom left ->
+<P>
+
+<H4> SELECTED DISKS</H4>
+
+<img src='img/100.png'>
+
+<P>
+[Doubt: Does the 'Boot' tick mean also that you want the bootloader installed, or merely that you will be booting somehow on this disc? Do you really have to specify bootloader installation additionally?].
+<BR>
+This may show immediately the disc in question as bootable (Boot column ticked).
+<P>
+*Select the disc* in the box.
+<BR>
+
+<img src='img/110.png'>
+
+<P>
+
+For <B>MBR</B>:
+<br>
+- If you want Korora Grub on the MBR, i.e. if you want to see the Korora Grub menu on startup (which will provide access to other OS's installed at the time), choose "Set as boot device" and ensure the Boot column is ticked.
+<br>
+- If you want to preserve the existing startup boot system, choose "Do not install bootloader" and ensure the Boot column is UNticked.
+<br>
+[Question: this implies putting Grub on the root partition boot sector; how/where is this specified? Somebody please elaborate].
+<P>
+
+For <B>EFI</B>:
+<br>
+[This screen is enigmatic for EFI. The installer *must* create and populate <CODE>\EFI\fedora\</CODE> and add the OS into NVRAM. We think the only debate is whether to replace the existing default bootloader or not].
+
+<BLOCKQUOTE>
+<I>At present, Anaconda will overwrite the default bootloader <CODE>\EFI\Boot\bootx64.efi</CODE> anyway. Make sure you backed up the original one.</I>
+</BLOCKQUOTE>
+
+- If you want Korora Grub to replace the default bootloader, choose "Set as boot device" and ensure the Boot column is ticked. Remember, this is only invoked if prior boot choices are ineffective.
+<br>
+- If you want to preserve your existing boot sequence, choose "Do not install bootloader" and ensure the Boot column is UNticked.
+<br>
+This yields a warning "You have chosen to skip bootloader installation. Your system may not be bootable".
+<BR>
+[In fact we think this makes no difference, and that the default bootloader gets overwritten anyway.
+<BR>
+What exactly does "skip bootloader installation" mean? To clarify].
+<P>
+[At present, try the second option initially, please note and report the contents or output of:
+<br>
+\EFI\
+<br>
+\EFI\Boot\
+<br>
+\EFI\fedora\
+<br>
+efibootmgr -v
+<P>
+If \EFI\fedora\ is not created and populated with at least grubx64.efi and shim.efi
+then re-install with the first option].
+<P>
+
+Close ->
+
+<h4>INSTALLATION OPTIONS</h4>
+
+<img src='img/120.png'>
+
+<UL>
+<LI>Automatically configure...
+<P>
+<LI>I want more space. Guide me...
+<P>
+<LI><EM>I want to review/modify my disk partitions</EM>
+<br>
+I have only persued the last, commonly called <I>custom partitioning</I>. My discs are always pre-partitioned.
+</UL>
+
+<b>Partition scheme</b>: choose normally "Standard partitions". The default LVM, and other choice BTRFS, are for specialists.
+<P>
+Continue ->
+<P>
+
+<H3>MANUAL PARTITIONING</H3>
+
+This is *the* puzzle.
+<P>
+THE INITIAL SITUATION (1)
+<BR>
+<img src='img/130.png'>
+
+<P>
+This shows a typcal opening screen: the LH panel shows the prospective Korora (Fedora) makeup first, empty; then what it understands of the disc below. Any unexpanded entry can be expanded by clicking on its arrow, and vice versa.  The screenshot shows 4 other installed Linux's, and the great Unknown at the bottom...
+<BR>
+
+<img src='img/140.png'>
+
+<BR>
+hides another Linux, OEM and Windows partitions. Curiously 170Gb of genuinely free (unallocated) disc space is *not* shown. BUG?
+<P>
+
+Anaconda works by taking disc space from the lower part (or creating new partitions from free space, the bottom left <b>+</b> button) and adding it to the new installation. As we have seen, this needs at least a root (<B>/</B>) partition exclusive to itself, and a <B>swap</B> partition - one suffices for all installed Linux's, so if there is already one, you have no need to define one. For EFI, the <b>ESP</b> also needs including.
+<BR>
+I want to install *this* Korora in place of the second existing Korora...
+<P>
+THE INITIAL SITUATION (2)
+<BR>
+<img src='img/150.png'>
+
+<BR>
+which is on sda11. In this case, its two other partitions are common to other systems:
+<BR>
+- <B>swap</B> on sda7
+<BR>
+- <B>ESP</B> on sda2.
+
+<BLOCKQUOTE>
+[Be warned that despite this example, do *not* try multiple installations of the same Linux distribution on an EFI box - it does not (yet) work, due to just one \EFI\{distribution}\ directory. It is fine on an MBR box].
+</BLOCKQUOTE>
+
+So, to structure our new Korora installation, select a partition from the lower part of the LH panel, and on the RH side:
+<br>
+- specify its mount point
+<br>
+- for <I>non</I> system-wide partitions, *click Reformat* (otherwise nothing happens; BUG?)
+<P>
+- Update Settings
+<P>
+
+<img src='img/160.png'>
+
+<P>
+Earlier screenshots INITIAL SITUATION (1) &amp; (2) and that above show the 'before' and 'after' effect of defining the root partition. Partition <CODE>sda11</CODE> has been taken from the installation being overwritten and added as <B>/</B> of our new installation. At the same time, automatically, the <B>swap</B> partition <CODE>sda7</CODE> has been added.
+<P>
+This suffices for an MBR system; click "Done" (unless you wish to add other partitions e.g. for data).
+<P>
+For EFI, the ESP could be added automatically too, but currently you have to add it manually...
+<P>
+Select the ESP, here sda2, anywhere you see it on the LH panel, and on the RH side:
+<br>
+- specify its mount point as <CODE>/boot/efi</CODE>
+<br>
+- do NOT Reformat (except for a virgin system with no previous ESP)
+<br>
+- Update settings
+<P>
+<img src='img/170.png'>
+<P>
+This screenshot shows the final result; the EFI Korora installation-to-be is fully defined - unless you want to add further partitions e.g. for data.
+<P>
+Evidently the number of paths through this process are many, and this describes only the situation of assigning existing partitions. Other users please add examples.
+<P>
+Click "Done" at last! ->
+<P>
+
+<B>SUMMARY OF CHANGES</B>
+<P>
+<img src='img/180.png'>
+<P>
+This shows what changes Anaconda intends to make to the disc - of doubtful worth in this example. [BUG?]. If you agree, click "Accept Changes."
+<P>
+
+This returns to the INSTALLATION SUMMARY SCREEN...
+<br>
+<img src='img/190.png'>
+<BR>
+with nothing flagged as wanting: compare its original state [Image 040]. It is only when you click "Begin Installation" bottom right that the disc is touched; otherwise you can re-define things ad infinitum.
+<P>
+
+<H3>Installation, CONFIGURATION</H3>
+
+<img src='img/200.png'>
+
+<P>
+While the system is being written to the disc, you can and should do the <B>USER SETTINGS</B>:
+<UL>
+<LI>ROOT PASSWORD to set the root password.
+<P>
+<LI>USER CREATION to define at least one user (yourself), possibly others. This is self-explanatory.<P>
+[Can someone provide screenshots of each please?]
+</UL>
+
+<h4>RE-BOOTING</h4>
+
+At the end, if on an MBR box you asked for the bootloader to be put on the disc itself sdX (MBR), when you re-boot you should see the Korora Grub boot menu. Otherwise you have your own way of booting OS's.
+<BR>
+On an EFI box you <I>might</I> see the Korora Grub menu. If not, do not worry: you can always get to it via the EFI boot menu, or your boot manager.
+
+<H5>Accessing the EFI NVRAM</H5>
+
+You may need to do this to investigate booting problems. (Accessing the ESP was described under BEFORE YOU BEGIN). It is very simple. As root, at the command line, type:
+<BR>
+<CODE> efibootmgr</CODE>
+<BR>
+This outputs a neat summary of the currently installed OS's and related info like BootOrder, activations.
+<BR>
+<CODE> efibootmgr -v</CODE>
+<BR>
+provides more information, most importantly for us the <i>path of the bootloader</i> for each installed OS. It is all self-evident, and you will understand your EFI system at once.
+<BR>
+<CODE> man efibootmgr</CODE>
+<BR>
+provides an instructive explanation of itself.
+<P>
+<CODE>http://www.rodsbooks.com/efi-bootloaders/</CODE>
+<BR>is the essential EFI web site if you are interested. This document contains a few fragments from it, gratefully acknowledged.
+
+</BLOCKQUOTE>
+</body></html>
